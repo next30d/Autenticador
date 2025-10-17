@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar manifest.json
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y jq; fi
+          jq -e . manifest.json >/dev/null || (echo "manifest.json inválido" && exit 1)
+
+  node:
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18,20]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Detectar package.json
+        id: pkg
+        run: |
+          if [ -f package.json ]; then echo "present=true" >> $GITHUB_OUTPUT; else echo "present=false" >> $GITHUB_OUTPUT; fi
+      - name: Instalar dependências (se houver)
+        if: steps.pkg.outputs.present == 'true'
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Lint (se existir)
+        if: steps.pkg.outputs.present == 'true'
+        run: npm run lint --if-present
+      - name: Testes (se existir)
+        if: steps.pkg.outputs.present == 'true'
+        run: npm test --if-present
+      - name: Empacotar extensão (.zip)
+        run: |
+          mkdir -p dist
+          zip -r dist/autenticador.zip . -x node_modules/\* dist/\* .git/\*
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: autenticador-extension
+          path: dist/autenticador.zip
