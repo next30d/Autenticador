@@ -9,40 +9,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18, 20] # Testa em Node 18 e 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm' # Cache para acelerar instalação
-
       - name: Validate manifest.json
         run: |
           jq -e . manifest.json >/dev/null || (echo "Erro: manifest.json inválido" && exit 1)
-
-      - name: Check for package.json
-        id: pkg
-        run: |
-          if [ -f package.json ]; then echo "present=true" >> $GITHUB_OUTPUT; else echo "present=false" >> $GITHUB_OUTPUT; fi
-
-      - name: Install dependencies (if package.json exists)
-        if: steps.pkg.outputs.present == 'true'
-        run: |
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-
-      - name: Run lint (if available)
-        if: steps.pkg.outputs.present == 'true'
-        run: npm run lint --if-present
-
-      - name: Run tests (if available)
-        if: steps.pkg.outputs.present == 'true'
-        run: npm test --if-present
 
       - name: Package Chrome extension
         run: |
@@ -56,5 +29,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: chrome-extension-node${{ matrix.node-version }}
+          name: chrome-extension
           path: dist/extension.zip
