@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "COMPI - Autenticador",
+  "version": "1.0.0",
+  "description": "Monitora a fila de documentos no Autenticador e exibe um alerta popup quando novos documentos chegam.",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "alarms",
+    "scripting",
+    "tabs",
+    "notifications",
+    "system.display",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://infoleg-sileg.camara.leg.br/autenticador/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "alarm.mp3",
+        "speaker-on.png",
+        "speaker-off.png",
+        "on.png",
+        "off.png"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
