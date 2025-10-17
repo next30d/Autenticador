@@ -1,51 +1,60 @@
-name: CI
+name: CI for Chrome Extension
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validar manifest.json
-        run: |
-          if ! command -v jq >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y jq; fi
-          jq -e . manifest.json >/dev/null || (echo "manifest.json inválido" && exit 1)
-
-  node:
-    needs: validate
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [18, 20] # Testa em Node 18 e 20
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Detectar package.json
+          cache: 'npm' # Cache para acelerar instalação
+
+      - name: Validate manifest.json
+        run: |
+          jq -e . manifest.json >/dev/null || (echo "Erro: manifest.json inválido" && exit 1)
+
+      - name: Check for package.json
         id: pkg
         run: |
           if [ -f package.json ]; then echo "present=true" >> $GITHUB_OUTPUT; else echo "present=false" >> $GITHUB_OUTPUT; fi
-      - name: Instalar dependências (se houver)
+
+      - name: Install dependencies (if package.json exists)
         if: steps.pkg.outputs.present == 'true'
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
-      - name: Lint (se existir)
+
+      - name: Run lint (if available)
         if: steps.pkg.outputs.present == 'true'
         run: npm run lint --if-present
-      - name: Testes (se existir)
+
+      - name: Run tests (if available)
         if: steps.pkg.outputs.present == 'true'
         run: npm test --if-present
-      - name: Empacotar extensão (.zip)
+
+      - name: Package Chrome extension
         run: |
           mkdir -p dist
-          zip -r dist/autenticador.zip . -x node_modules/\* dist/\* .git/\*
+          zip -r dist/extension.zip . -x "node_modules/*" "dist/*" ".git/*" ".github/*"
+
+      - name: Verify zip creation
+        run: |
+          if [ ! -f dist/extension.zip ]; then echo "Erro: dist/extension.zip não foi criado"; exit 1; fi
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: autenticador-extension-node${{ matrix.node-version }} # Nome único com a versão do Node
-          path: dist/autenticador.zip
+          name: chrome-extension-node${{ matrix.node-version }}
+          path: dist/extension.zip
