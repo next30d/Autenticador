@@ -92,23 +92,40 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Evento para botão de refresh (definir intervalo em segundos)
-  refreshButton.addEventListener('click', () => {
-    chrome.storage.local.get(['refreshSeconds'], (result) => {
-      const current = result.refreshSeconds !== undefined ? result.refreshSeconds : 180; // 180s = 3min
-      const input = prompt('Intervalo de refresh em segundos (padrão 180):', String(current));
-      if (input === null) return; // cancelado
-      const seconds = parseInt(input, 10);
-      if (isNaN(seconds) || seconds <= 0) {
-        alert('Por favor informe um número inteiro positivo de segundos.');
-        return;
-      }
-      chrome.storage.local.set({ refreshSeconds: seconds }, () => {
-        // envia para o background atualizar o intervalo
-        chrome.runtime.sendMessage({ action: 'setRefreshSeconds', seconds }, (resp) => {
-          console.log('RefreshSeconds atualizado:', seconds, resp);
-          alert('Intervalo de refresh salvo: ' + seconds + ' segundo(s)');
-        });
+  // Modal elements para configurar refresh
+  const modalOverlay = document.getElementById('modalOverlay');
+  const refreshModal = document.getElementById('refreshModal');
+  const refreshInput = document.getElementById('refreshInput');
+  const cancelRefresh = document.getElementById('cancelRefresh');
+  const saveRefresh = document.getElementById('saveRefresh');
+
+  function openRefreshModal() {
+    chrome.storage.local.get(['refreshSeconds'], (r) => {
+      const secs = r.refreshSeconds !== undefined ? r.refreshSeconds : 180;
+      refreshInput.value = secs;
+      modalOverlay.style.display = 'flex';
+      refreshInput.focus();
+    });
+  }
+
+  function closeRefreshModal() {
+    modalOverlay.style.display = 'none';
+  }
+
+  refreshButton.addEventListener('click', openRefreshModal);
+  cancelRefresh.addEventListener('click', closeRefreshModal);
+
+  saveRefresh.addEventListener('click', () => {
+    const val = parseInt(refreshInput.value, 10);
+    if (isNaN(val) || val <= 0) {
+      alert('Por favor informe um número inteiro positivo de segundos.');
+      return;
+    }
+    chrome.storage.local.set({ refreshSeconds: val }, () => {
+      chrome.runtime.sendMessage({ action: 'setRefreshSeconds', seconds: val }, (resp) => {
+        console.log('RefreshSeconds atualizado:', val, resp);
+        refreshButton.title = `Configurar refresh (atual: ${val}s)`;
+        closeRefreshModal();
       });
     });
   });

@@ -5,22 +5,21 @@
   <title>Novo Documento!</title>
   <style>
     body {
-      font-family: "Inter", "Calisto MT", Arial, sans-serif;
-      padding: 24px;
-      background: linear-gradient(180deg,#fffde7 0%,#fff9c4 100%);
-      color: #111;
-      min-width: 360px;
-      min-height: 220px;
+      font-family: "Calisto MT", Arial, sans-serif;
+      padding: 20px;
+      background-color: #ffff00;
+      color: #000000;
+      min-width: 350px;
+      min-height: 200px;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      border-radius: 12px;
+      border: 2px solid #000;
+      border-radius: 10px;
       text-align: center;
       position: relative;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-      border: 1px solid rgba(0,0,0,0.08);
     }
 
     h1 {
@@ -31,16 +30,15 @@
     }
 
     button {
-      background-color: #111111;
-      color: #fff800;
+      background-color: #000000;
+      color: #ffff00;
       border: none;
       padding: 12px 24px;
-      font-size: 16px;
-      font-family: "Inter", "Calisto MT", Arial, sans-serif;
-      border-radius: 8px;
+      font-size: 18px;
+      font-family: "Calisto MT", Arial, sans-serif;
+      border-radius: 5px;
       cursor: pointer;
-      transition: transform 0.12s ease, box-shadow 0.12s ease;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      transition: background-color 0.3s;
     }
 
     button:hover {
@@ -49,41 +47,56 @@
 
     .settings-container {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: 10px;
+      right: 10px;
       display: flex;
-      gap: 12px;
-      align-items: center;
+      gap: 10px;
     }
 
     .settings-icon {
       cursor: pointer;
-      background: rgba(255,255,255,0.9);
-      border: 1px solid rgba(0,0,0,0.06);
-      padding: 6px;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.12s ease, background 0.12s ease;
-    }
-
-    .settings-icon:hover {
-      transform: translateY(-2px);
-      background: #fff;
+      background: none;
+      border: none;
+      padding: 0;
+      width: 24px;
+      height: 24px;
     }
 
     .settings-icon img {
-      width: 20px;
-      height: 20px;
+      width: 100%;
+      height: 100%;
       display: block;
     }
 
     .settings-container.hidden {
       display: none;
     }
+
+    /* Modal simples */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .modal {
+      background: #fff;
+      color: #000;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+      min-width: 280px;
+    }
+
+    .modal.hidden { display: none; }
+
+    .modal label { display:block; margin-bottom:8px; font-weight:600; }
+    .modal input[type="number"] { width:100%; padding:8px; margin-bottom:12px; }
+    .modal .actions { display:flex; gap:8px; justify-content:flex-end; }
   </style>
 </head>
 <body>
@@ -103,6 +116,17 @@
     <button id="openSystem" aria-label="Retornar ao Autenticador para visualizar documentos" title="Abrir o Autenticador">Autenticador</button>
   </main>
   <audio id="alarmSound" src="alarm.mp3" preload="auto"></audio>
+  <!-- Modal para configurar intervalo em segundos -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div id="refreshModal" class="modal">
+      <label for="refreshInput">Intervalo de refresh (segundos):</label>
+      <input id="refreshInput" type="number" min="1" step="1">
+      <div class="actions">
+        <button id="cancelRefresh" type="button">Cancelar</button>
+        <button id="saveRefresh" type="button">Salvar</button>
+      </div>
+    </div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>
