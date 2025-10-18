@@ -46,7 +46,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Se for popup de página indisponível
     if (isUnavailable) {
       settingsContainer.classList.add('hidden');
-      h1Element.textContent = 'Página indisponível';
+      h1Element.textContent = 'Fora do ar';
       openSystemButton.style.display = 'none';
       return; // não precisa verificar fila
     }
@@ -128,6 +128,21 @@ window.addEventListener('DOMContentLoaded', () => {
         closeRefreshModal();
       });
     });
+  });
+
+  // Fecha modal quando clicar no overlay (fora do modal)
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) closeRefreshModal();
+  });
+
+  // Teclas: Enter para salvar, Esc para cancelar
+  refreshInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveRefresh.click();
+    } else if (e.key === 'Escape') {
+      closeRefreshModal();
+    }
   });
 
   // Evento para habilitar/desabilitar a extensão

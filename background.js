@@ -28,8 +28,8 @@ async function checkNewDocuments() {
     // Se a aba alvo não estiver aberta, notifica o usuário (apenas uma vez até reabrir)
     if (monitoredTabId === null) {
       if (!lastPageUnavailableNotified) {
-        const popupWidth = 420;
-        const popupHeight = 160;
+  const popupWidth = 420;
+  const popupHeight = 240;
         chrome.system.display.getInfo((displays) => {
           const primaryDisplay = displays[0];
           const screenWidth = primaryDisplay.workArea.width;
