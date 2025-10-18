@@ -19,11 +19,13 @@ window.addEventListener('DOMContentLoaded', () => {
   const soundIcon = toggleSoundButton.querySelector('img');
   const extensionIcon = toggleExtensionButton.querySelector('img');
   const settingsContainer = document.querySelector('.settings-container');
+  const refreshButton = document.getElementById('refreshButton');
   const openSystemButton = document.getElementById('openSystem');
   const h1Element = document.querySelector('h1');
 
   // Verifica se é uma janela de notificação
   const isNotification = getQueryParam('type') === 'notification';
+  const isUnavailable = getQueryParam('type') === 'unavailable';
 
   // Carrega o estado do som e da extensão
   chrome.storage.local.get(['soundEnabled', 'extensionEnabled'], (result) => {
@@ -39,6 +41,14 @@ window.addEventListener('DOMContentLoaded', () => {
     // Oculta os ícones de configuração na janela de notificação
     if (isNotification) {
       settingsContainer.classList.add('hidden');
+    }
+
+    // Se for popup de página indisponível
+    if (isUnavailable) {
+      settingsContainer.classList.add('hidden');
+      h1Element.textContent = 'Página indisponível';
+      openSystemButton.style.display = 'none';
+      return; // não precisa verificar fila
     }
 
     // Se a extensão estiver desabilitada e for a janela de configuração, exibe mensagem especial
@@ -72,6 +82,27 @@ window.addEventListener('DOMContentLoaded', () => {
       chrome.storage.local.set({ soundEnabled: newSoundState }, () => {
         soundIcon.src = newSoundState ? 'speaker-on.png' : 'speaker-off.png';
         soundIcon.alt = newSoundState ? 'Alarme Habilitado' : 'Alarme Desabilitado';
+      });
+    });
+  });
+
+  // Evento para botão de refresh (definir intervalo em minutos)
+  refreshButton.addEventListener('click', () => {
+    chrome.storage.local.get(['refreshMinutes'], (result) => {
+      const current = result.refreshMinutes !== undefined ? result.refreshMinutes : 3;
+      const input = prompt('Intervalo de refresh em minutos (padrão 3):', String(current));
+      if (input === null) return; // cancelado
+      const minutes = parseInt(input, 10);
+      if (isNaN(minutes) || minutes <= 0) {
+        alert('Por favor informe um número inteiro positivo.');
+        return;
+      }
+      chrome.storage.local.set({ refreshMinutes: minutes }, () => {
+        // envia para o background atualizar o intervalo
+        chrome.runtime.sendMessage({ action: 'setRefreshMinutes', minutes }, (resp) => {
+          console.log('RefreshMinutes atualizado:', minutes, resp);
+          alert('Intervalo de refresh salvo: ' + minutes + ' minuto(s)');
+        });
       });
     });
   });

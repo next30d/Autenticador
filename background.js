@@ -1,4 +1,4 @@
-const VERIFICATION_INTERVAL = 20000; // 20 segundos
+let VERIFICATION_INTERVAL = 3 * 60 * 1000; // padrão 3 minutos em ms
 let lastDocumentCount = 0; // Substitui lastFilaVazia por lastDocumentCount
 const TARGET_URL_BASE = "https://infoleg-sileg.camara.leg.br/autenticador/";
 const TARGET_URL_COMPLETA = "https://infoleg-sileg.camara.leg.br/autenticador/#filaDocumento";
@@ -6,6 +6,7 @@ let isChecking = false;
 let monitoredTabId = null;
 let extensionEnabled = true;
 let verificationInterval = null;
+let lastPageUnavailableNotified = false;
 
 /**
  * Função principal para verificar documentos na fila.
@@ -23,6 +24,39 @@ async function checkNewDocuments() {
     const currentDocumentCount = result.count;
     console.log("Número atual de documentos (background):", currentDocumentCount);
     console.log("Número anterior de documentos (background):", lastDocumentCount);
+
+    // Se a aba alvo não estiver aberta, notifica o usuário (apenas uma vez até reabrir)
+    if (monitoredTabId === null) {
+      if (!lastPageUnavailableNotified) {
+        const popupWidth = 420;
+        const popupHeight = 160;
+        chrome.system.display.getInfo((displays) => {
+          const primaryDisplay = displays[0];
+          const screenWidth = primaryDisplay.workArea.width;
+          const screenHeight = primaryDisplay.workArea.height;
+          const left = Math.round((screenWidth - popupWidth) / 2);
+          const top = Math.round((screenHeight - popupHeight) / 2);
+          chrome.windows.create({
+            url: 'popup.html?type=unavailable',
+            type: 'popup',
+            width: popupWidth,
+            height: popupHeight,
+            left: left,
+            top: top,
+            focused: true
+          }, () => {
+            console.log("Popup 'Página indisponível' exibido.");
+          });
+        });
+        lastPageUnavailableNotified = true;
+      }
+      // Não prossegue com verificação de documentos quando a página não está aberta
+      lastDocumentCount = 0;
+      return;
+    } else {
+      // quando a página volta a estar disponível, reseta a flag
+      lastPageUnavailableNotified = false;
+    }
 
     // Dispara a notificação apenas se o número de documentos aumentou
     if (currentDocumentCount > lastDocumentCount && currentDocumentCount > 0) {
@@ -139,6 +173,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       stopVerificationLoop();
     }
     sendResponse({ success: true });
+  } else if (request.action === 'setRefreshMinutes') {
+    const minutes = request.minutes !== undefined ? Number(request.minutes) : 3;
+    if (isNaN(minutes) || minutes <= 0) {
+      sendResponse({ success: false, message: 'invalid_minutes' });
+      return;
+    }
+    VERIFICATION_INTERVAL = minutes * 60 * 1000;
+    chrome.storage.local.set({ refreshMinutes: minutes });
+    if (extensionEnabled) {
+      startVerificationLoop();
+    }
+    sendResponse({ success: true, minutes });
   }
 });
 
@@ -147,8 +193,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 chrome.runtime.onStartup.addListener(() => {
   console.log("Extensão iniciada. Iniciando loop de verificação.");
-  chrome.storage.local.get(['extensionEnabled'], (result) => {
+  chrome.storage.local.get(['extensionEnabled','refreshMinutes'], (result) => {
     extensionEnabled = result.extensionEnabled !== undefined ? result.extensionEnabled : true;
+    const minutes = result.refreshMinutes !== undefined ? Number(result.refreshMinutes) : 3;
+    if (!isNaN(minutes) && minutes > 0) {
+      VERIFICATION_INTERVAL = minutes * 60 * 1000;
+    }
     if (extensionEnabled) {
       startVerificationLoop();
     }
@@ -160,8 +210,12 @@ chrome.runtime.onStartup.addListener(() => {
  */
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("Extensão instalada/atualizada. Executando verificação inicial.");
-  chrome.storage.local.get(['extensionEnabled'], (result) => {
+  chrome.storage.local.get(['extensionEnabled','refreshMinutes'], (result) => {
     extensionEnabled = result.extensionEnabled !== undefined ? result.extensionEnabled : true;
+    const minutes = result.refreshMinutes !== undefined ? Number(result.refreshMinutes) : 3;
+    if (!isNaN(minutes) && minutes > 0) {
+      VERIFICATION_INTERVAL = minutes * 60 * 1000;
+    }
     if (extensionEnabled) {
       checkNewDocuments();
       startVerificationLoop();
