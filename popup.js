@@ -58,6 +58,12 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Atualiza o title do botão de refresh com o valor atual em segundos
+    chrome.storage.local.get(['refreshSeconds'], (r) => {
+      const secs = r.refreshSeconds !== undefined ? r.refreshSeconds : 180;
+      refreshButton.title = `Configurar refresh (atual: ${secs}s)`;
+    });
+
     // Solicita o estado da fila
     chrome.runtime.sendMessage({ action: 'getFilaState' }, (response) => {
       if (response) {
@@ -86,22 +92,22 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Evento para botão de refresh (definir intervalo em minutos)
+  // Evento para botão de refresh (definir intervalo em segundos)
   refreshButton.addEventListener('click', () => {
-    chrome.storage.local.get(['refreshMinutes'], (result) => {
-      const current = result.refreshMinutes !== undefined ? result.refreshMinutes : 3;
-      const input = prompt('Intervalo de refresh em minutos (padrão 3):', String(current));
+    chrome.storage.local.get(['refreshSeconds'], (result) => {
+      const current = result.refreshSeconds !== undefined ? result.refreshSeconds : 180; // 180s = 3min
+      const input = prompt('Intervalo de refresh em segundos (padrão 180):', String(current));
       if (input === null) return; // cancelado
-      const minutes = parseInt(input, 10);
-      if (isNaN(minutes) || minutes <= 0) {
-        alert('Por favor informe um número inteiro positivo.');
+      const seconds = parseInt(input, 10);
+      if (isNaN(seconds) || seconds <= 0) {
+        alert('Por favor informe um número inteiro positivo de segundos.');
         return;
       }
-      chrome.storage.local.set({ refreshMinutes: minutes }, () => {
+      chrome.storage.local.set({ refreshSeconds: seconds }, () => {
         // envia para o background atualizar o intervalo
-        chrome.runtime.sendMessage({ action: 'setRefreshMinutes', minutes }, (resp) => {
-          console.log('RefreshMinutes atualizado:', minutes, resp);
-          alert('Intervalo de refresh salvo: ' + minutes + ' minuto(s)');
+        chrome.runtime.sendMessage({ action: 'setRefreshSeconds', seconds }, (resp) => {
+          console.log('RefreshSeconds atualizado:', seconds, resp);
+          alert('Intervalo de refresh salvo: ' + seconds + ' segundo(s)');
         });
       });
     });

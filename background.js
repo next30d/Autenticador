@@ -1,4 +1,4 @@
-let VERIFICATION_INTERVAL = 3 * 60 * 1000; // padrão 3 minutos em ms
+let VERIFICATION_INTERVAL = 180 * 1000; // padrão 180 segundos = 3 minutos em ms
 let lastDocumentCount = 0; // Substitui lastFilaVazia por lastDocumentCount
 const TARGET_URL_BASE = "https://infoleg-sileg.camara.leg.br/autenticador/";
 const TARGET_URL_COMPLETA = "https://infoleg-sileg.camara.leg.br/autenticador/#filaDocumento";
@@ -105,22 +105,26 @@ async function isFilaVazia() {
         if (targetTab) {
           console.log("Aba alvo encontrada. ID:", targetTab.id);
           monitoredTabId = targetTab.id;
-          chrome.scripting.executeScript({
-            target: { tabId: targetTab.id },
-            files: ['content.js']
-          }).then(() => {
-            chrome.tabs.sendMessage(targetTab.id, { action: "getDocumentState" }, (response) => {
-              if (chrome.runtime.lastError) {
-                console.error("Erro ao enviar mensagem ao content script:", chrome.runtime.lastError);
-                resolve({ state: 'empty', count: 0 });
-              } else {
-                console.log("Resposta do content script:", response);
-                resolve(response || { state: 'empty', count: 0 });
-              }
+          // tenta recarregar a aba monitorada antes de executar o content script
+          chrome.tabs.reload(targetTab.id, { bypassCache: true }, () => {
+            // Ignora erro de reload e tenta executar o content script em seguida
+            chrome.scripting.executeScript({
+              target: { tabId: targetTab.id },
+              files: ['content.js']
+            }).then(() => {
+              chrome.tabs.sendMessage(targetTab.id, { action: "getDocumentState" }, (response) => {
+                if (chrome.runtime.lastError) {
+                  console.error("Erro ao enviar mensagem ao content script:", chrome.runtime.lastError);
+                  resolve({ state: 'empty', count: 0 });
+                } else {
+                  console.log("Resposta do content script:", response);
+                  resolve(response || { state: 'empty', count: 0 });
+                }
+              });
+            }).catch((error) => {
+              console.error("Erro ao executar content.js:", error);
+              resolve({ state: 'empty', count: 0 });
             });
-          }).catch((error) => {
-            console.error("Erro ao executar content.js:", error);
-            resolve({ state: 'empty', count: 0 });
           });
         } else {
           console.warn("Nenhuma aba com #filaDocumento encontrada.");
@@ -173,18 +177,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       stopVerificationLoop();
     }
     sendResponse({ success: true });
-  } else if (request.action === 'setRefreshMinutes') {
-    const minutes = request.minutes !== undefined ? Number(request.minutes) : 3;
-    if (isNaN(minutes) || minutes <= 0) {
-      sendResponse({ success: false, message: 'invalid_minutes' });
+  } else if (request.action === 'setRefreshSeconds') {
+    const seconds = request.seconds !== undefined ? Number(request.seconds) : 180;
+    if (isNaN(seconds) || seconds <= 0) {
+      sendResponse({ success: false, message: 'invalid_seconds' });
       return;
     }
-    VERIFICATION_INTERVAL = minutes * 60 * 1000;
-    chrome.storage.local.set({ refreshMinutes: minutes });
+    VERIFICATION_INTERVAL = seconds * 1000;
+    chrome.storage.local.set({ refreshSeconds: seconds });
     if (extensionEnabled) {
       startVerificationLoop();
     }
-    sendResponse({ success: true, minutes });
+    sendResponse({ success: true, seconds });
   }
 });
 
@@ -193,11 +197,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  */
 chrome.runtime.onStartup.addListener(() => {
   console.log("Extensão iniciada. Iniciando loop de verificação.");
-  chrome.storage.local.get(['extensionEnabled','refreshMinutes'], (result) => {
+  chrome.storage.local.get(['extensionEnabled','refreshSeconds'], (result) => {
     extensionEnabled = result.extensionEnabled !== undefined ? result.extensionEnabled : true;
-    const minutes = result.refreshMinutes !== undefined ? Number(result.refreshMinutes) : 3;
-    if (!isNaN(minutes) && minutes > 0) {
-      VERIFICATION_INTERVAL = minutes * 60 * 1000;
+    const seconds = result.refreshSeconds !== undefined ? Number(result.refreshSeconds) : 180;
+    if (!isNaN(seconds) && seconds > 0) {
+      VERIFICATION_INTERVAL = seconds * 1000;
     }
     if (extensionEnabled) {
       startVerificationLoop();
@@ -210,11 +214,11 @@ chrome.runtime.onStartup.addListener(() => {
  */
 chrome.runtime.onInstalled.addListener(async () => {
   console.log("Extensão instalada/atualizada. Executando verificação inicial.");
-  chrome.storage.local.get(['extensionEnabled','refreshMinutes'], (result) => {
+  chrome.storage.local.get(['extensionEnabled','refreshSeconds'], (result) => {
     extensionEnabled = result.extensionEnabled !== undefined ? result.extensionEnabled : true;
-    const minutes = result.refreshMinutes !== undefined ? Number(result.refreshMinutes) : 3;
-    if (!isNaN(minutes) && minutes > 0) {
-      VERIFICATION_INTERVAL = minutes * 60 * 1000;
+    const seconds = result.refreshSeconds !== undefined ? Number(result.refreshSeconds) : 180;
+    if (!isNaN(seconds) && seconds > 0) {
+      VERIFICATION_INTERVAL = seconds * 1000;
     }
     if (extensionEnabled) {
       checkNewDocuments();

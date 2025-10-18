@@ -5,21 +5,22 @@
   <title>Novo Documento!</title>
   <style>
     body {
-      font-family: "Calisto MT", Arial, sans-serif;
-      padding: 20px;
-      background-color: #ffff00;
-      color: #000000;
-      min-width: 350px;
-      min-height: 200px;
+      font-family: "Inter", "Calisto MT", Arial, sans-serif;
+      padding: 24px;
+      background: linear-gradient(180deg,#fffde7 0%,#fff9c4 100%);
+      color: #111;
+      min-width: 360px;
+      min-height: 220px;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      border: 2px solid #000;
-      border-radius: 10px;
+      border-radius: 12px;
       text-align: center;
       position: relative;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      border: 1px solid rgba(0,0,0,0.08);
     }
 
     h1 {
@@ -30,15 +31,16 @@
     }
 
     button {
-      background-color: #000000;
-      color: #ffff00;
+      background-color: #111111;
+      color: #fff800;
       border: none;
       padding: 12px 24px;
-      font-size: 18px;
-      font-family: "Calisto MT", Arial, sans-serif;
-      border-radius: 5px;
+      font-size: 16px;
+      font-family: "Inter", "Calisto MT", Arial, sans-serif;
+      border-radius: 8px;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     }
 
     button:hover {
@@ -47,24 +49,35 @@
 
     .settings-container {
       position: absolute;
-      top: 10px;
-      right: 10px;
+      top: 12px;
+      right: 12px;
       display: flex;
-      gap: 10px;
+      gap: 12px;
+      align-items: center;
     }
 
     .settings-icon {
       cursor: pointer;
-      background: none;
-      border: none;
-      padding: 0;
-      width: 24px;
-      height: 24px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid rgba(0,0,0,0.06);
+      padding: 6px;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+
+    .settings-icon:hover {
+      transform: translateY(-2px);
+      background: #fff;
     }
 
     .settings-icon img {
-      width: 100%;
-      height: 100%;
+      width: 20px;
+      height: 20px;
       display: block;
     }
 
@@ -75,19 +88,19 @@
 </head>
 <body>
   <div class="settings-container">
-    <button id="refreshButton" class="settings-icon" aria-label="Definir refresh automático">
+    <button id="refreshButton" class="settings-icon" aria-label="Definir refresh automático" title="Configurar refresh (segundos)">
       <img src="refresh.png" alt="Refresh">
     </button>
-    <button id="toggleSound" class="settings-icon" aria-label="Habilitar/Desabilitar Alarme Sonoro">
+    <button id="toggleSound" class="settings-icon" aria-label="Habilitar/Desabilitar Alarme Sonoro" title="Ativar/desativar som do alerta">
       <img src="speaker-on.png" alt="Alarme Habilitado">
     </button>
-    <button id="toggleExtension" class="settings-icon" aria-label="Habilitar/Desabilitar Extensão">
+    <button id="toggleExtension" class="settings-icon" aria-label="Habilitar/Desabilitar Extensão" title="Ativar/desativar a extensão">
       <img src="on.png" alt="Extensão Habilitada">
     </button>
   </div>
   <main>
     <h1>Novo documento na caixa de entrada.</h1>
-    <button id="openSystem" aria-label="Retornar ao Autenticador para visualizar documentos">Autenticador</button>
+    <button id="openSystem" aria-label="Retornar ao Autenticador para visualizar documentos" title="Abrir o Autenticador">Autenticador</button>
   </main>
   <audio id="alarmSound" src="alarm.mp3" preload="auto"></audio>
   <script src="popup.js"></script>
